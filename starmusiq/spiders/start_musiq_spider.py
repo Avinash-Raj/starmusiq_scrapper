@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import requests
 from bs4 import BeautifulSoup
 import requests
 from scrapy.selector import Selector
@@ -20,7 +21,7 @@ class MusiqSpider(CrawlSpider):
     start_urls = [
        "http://www.starmusiq.com/Latest.asp?Movie=&RecNextPg=1"
     ]
-    DOWNLOAD_LOCATION = '/home/avinash/caca'
+    DOWNLOAD_LOCATION = '/home/gemini/caca'
 
     #Rule(SgmlLinkExtractor(allow=(r'category1/description/\d+/story\.html',)), callback='parse_item', follow=True)
 
@@ -60,7 +61,7 @@ class MusiqSpider(CrawlSpider):
                 if re.match(r'(?i)(?:y|yes)$', wanna_scrap):
                     print '\033[92m' + 'Inside wanna scrap' + '\033[0m'
                     
-                    yield Request(url, callback=self.parse_file_page)
+                    MusiqSpider.parse_file_page(url)
 
                 # elif re.match(r'(?i)(?:n|no)$', wanna_scrap):
                 #     continue
@@ -68,25 +69,25 @@ class MusiqSpider(CrawlSpider):
                 yield item
         #return items
 
-    def parse_file_page(self, response):
-        #item passed from request
-        print '\033[92m' + 'parse_file_page!!!' + '\033[0m'
-        # item = response.meta['item']
-        # #selector
-        soup = BeautifulSoup(response.body, 'lxml')
-        trs = soup.select('.main_tb2 tr')
+    @classmethod
+    def parse_file_page(cls, url):
+        r = requests.get(url)
+        soup = BeautifulSoup(r.content, 'lxml')
+        trs = soup.select(".main_tb2")[3].select('tr')
         trs = trs[1:]
         for tr in trs:
-            tds = soup.select('td')
-            song_name = tds[1].find('h2').text
-            song_url = 'http://www.starmusiq.com/' + tds[2].find('a')['href']
-            is_download = raw_input('\033[94m' + 'May I download ' + song_name + '\033[0m')
-            if re.match(r'(?i)(yes|y)$', is_download):
-                r = requests.get(song_url)
-                output = open(cls.DOWNLOAD_LOCATION + os.sep + song_name + '.mp3','wb')
-                output.write(r.content)
-                output.close()
-            yield song_name
+            song_row = tr.select('td')[0].select('input')
+            if song_row:
+                tds = tr.select('td')
+                song_name = tds[1].text
+                song_url = 'http://www.starmusiq.com/' + tds[2].find('a')['href']
+                is_download = raw_input('\033[96m' + 'May I download ' + song_name + '?\033[0m')
+                if re.match(r'(?i)(yes|y)$', is_download):
+                    r = requests.get(song_url)
+                    output = open(cls.DOWNLOAD_LOCATION + os.sep + song_name + '.mp3','wb')
+                    output.write(r.content)
+                    output.close()
+
 
 
     
