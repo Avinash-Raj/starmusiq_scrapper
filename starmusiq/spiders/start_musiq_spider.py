@@ -51,7 +51,7 @@ class MusiqSpider(CrawlSpider):
                     author = foo[1]
                 item['movie_name'] = name.strip()
                 item['music_director'] = author.strip()
-                url = 'http://http://www.starmusiq.com' + movie[0].select('a')[0]['href'][1:]
+                url = 'http://www.starmusiq.com' + movie[0].select('a')[0]['href'][1:]
                 item['url'] = url
                 # print '\033[92m' + name + '\033[0m'
 
@@ -59,14 +59,14 @@ class MusiqSpider(CrawlSpider):
                 print '\033[92m' + wanna_scrap + '\033[0m'
                 if re.match(r'(?i)(?:y|yes)$', wanna_scrap):
                     print '\033[92m' + 'Inside wanna scrap' + '\033[0m'
-
-                    Request(url, callback=self.parse_file_page)
+                    
+                    yield Request(url, callback=self.parse_file_page)
 
                 # elif re.match(r'(?i)(?:n|no)$', wanna_scrap):
                 #     continue
 
-                items.append(item)
-        return items
+                yield item
+        #return items
 
     def parse_file_page(self, response):
         #item passed from request
@@ -86,6 +86,7 @@ class MusiqSpider(CrawlSpider):
                 output = open(cls.DOWNLOAD_LOCATION + os.sep + song_name + '.mp3','wb')
                 output.write(r.content)
                 output.close()
+            yield song_name
 
 
     
