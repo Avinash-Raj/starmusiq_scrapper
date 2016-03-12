@@ -3,7 +3,7 @@ starmusiq_scrapper
 Python Scrapy project which download files from starmusiq.com
 
 
-# Getting Started
+### Getting Started
 
 1. Create a new virtual environment.
 2. Install all the packages mentioned in requirements.txt file.
