@@ -3,37 +3,70 @@ import os
 import json
 import requests
 from bs4 import BeautifulSoup
-import requests
-from scrapy.selector import Selector
+
 try:
     from scrapy.spider import Spider
 except:
     from scrapy.spider import BaseSpider as Spider
-from scrapy.utils.response import get_base_url
-from scrapy.http.request import Request
-from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+
+# from scrapy.contrib.linkextractors.sgml import SgmlLinkExtractor
+from scrapy.linkextractors import LinkExtractor
 from scrapy.contrib.spiders import CrawlSpider, Rule
 from starmusiq.items import StarmusiqItem
+
 
 class MusiqSpider(CrawlSpider):
     name = "musiq"
     allowed_domains = ["starmusiq.com"]
+
+    DOWNLOAD_LOCATION = '/home/avinash/caca'
+
+    if not DOWNLOAD_LOCATION:
+        DOWNLOAD_LOCATION = raw_input(
+            '\033[91m' + 'Please choose the download location (ex. /home/download) : ' + '\033[0m')
+    while True:
+        is_dir = os.path.isdir(DOWNLOAD_LOCATION)
+        if not is_dir:
+            DOWNLOAD_LOCATION = raw_input('\033[93m' + 'Please enter a valid directory : ' + '\033[0m')
+        else:
+            break
+
+    print '\033[94m' + 'Please choose a number from the below list to crawl.' + '\033[0m'
+    print '\033[92m' + '1: Latest songs' + '\033[0m'
+    print '\033[92m' + '2: Ilayaraja hits' + '\033[0m'
+    print '\033[92m' + '3: A.R.Rahman hits' + '\033[0m'
+
+    num = raw_input('\033[93m' + 'Enter your number : ' + '\033[0m')
+    while True:
+        if num not in ('1', '2', '3'):
+            num = raw_input('\033[94m' + 'Please enter a valid number : ' + '\033[0m')
+        else:
+            break
+
     start_urls = [
-       "http://www.starmusiq.com/Latest.asp?Movie=&RecNextPg=1"
+        "http://www.starmusiq.com/Latest.asp?Movie=&RecNextPg=1"
     ]
-    DOWNLOAD_LOCATION = '/home/gemini/caca'
 
-    #Rule(SgmlLinkExtractor(allow=(r'category1/description/\d+/story\.html',)), callback='parse_item', follow=True)
-
-    # def parse(self, response):
-    #     filename = response.url.split("/")[-2] + '.html'
-    #     with open(filename, 'wb') as f:
-    #         f.write(response.body)
     rules = (
-        Rule(SgmlLinkExtractor(allow=(r'Movie=&RecNextPg=\d$',)), callback='parse_page', follow=True),
+        Rule(LinkExtractor(allow=(r'Movie=&RecNextPg=\d+$',)), callback='parse_page', follow=True),
     )
 
+    if num == '2':
+        start_urls = [
+            "http://starmusiq.com/Composer.asp?Composer=Ilaiyaraaja&RecNextPg=1"
+        ]
 
+        rules = (
+            Rule(LinkExtractor(allow=(r'Composer=Ilaiyaraaja&RecNextPg=\d+$',)), callback='parse_page', follow=True),
+        )
+    elif num == '3':
+        start_urls = [
+            "http://starmusiq.com/Composer.asp?Composer=A.R.Rahman&RecNextPg=1"
+        ]
+
+        rules = (
+            Rule(LinkExtractor(allow=(r'Composer=A.R.Rahman&RecNextPg=\d+$',)), callback='parse_page', follow=True),
+        )
 
     def parse_page(self, response):
         items = []
@@ -43,7 +76,7 @@ class MusiqSpider(CrawlSpider):
             item = StarmusiqItem()
             movie = site.select('.main_tb3 > tr')
             if movie:
-                #item['movie_name'] = movie[1].select('h1')[0].text()
+                # item['movie_name'] = movie[1].select('h1')[0].text()
                 name = movie[1].select('h1')[0].text
                 author = ''
                 if '-' in name:
@@ -56,18 +89,13 @@ class MusiqSpider(CrawlSpider):
                 item['url'] = url
                 # print '\033[92m' + name + '\033[0m'
 
-                wanna_scrap = raw_input('\033[92m'+ 'Do you want to scrape '+ str(name) + '?. Say yes or no.' + '\033[0m')
+                wanna_scrap = raw_input(
+                    '\033[92m' + 'Do you want to scrape ' + str(name) + '?.(Y/n) ' + '\033[0m')
                 print '\033[92m' + wanna_scrap + '\033[0m'
                 if re.match(r'(?i)(?:y|yes)$', wanna_scrap):
-                    print '\033[92m' + 'Inside wanna scrap' + '\033[0m'
-                    
                     MusiqSpider.parse_file_page(url)
 
-                # elif re.match(r'(?i)(?:n|no)$', wanna_scrap):
-                #     continue
-
                 yield item
-        #return items
 
     @classmethod
     def parse_file_page(cls, url):
@@ -84,10 +112,6 @@ class MusiqSpider(CrawlSpider):
                 is_download = raw_input('\033[96m' + 'May I download ' + song_name + '?\033[0m')
                 if re.match(r'(?i)(yes|y)$', is_download):
                     r = requests.get(song_url)
-                    output = open(cls.DOWNLOAD_LOCATION + os.sep + song_name + '.mp3','wb')
+                    output = open(cls.DOWNLOAD_LOCATION + os.sep + song_name + '.mp3', 'wb')
                     output.write(r.content)
                     output.close()
-
-
-
-    
